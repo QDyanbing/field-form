@@ -2,8 +2,6 @@ import React from 'react';
 import Form, { Field } from '../src';
 import type { FormInstance } from '../src';
 import { act, fireEvent, render } from '@testing-library/react';
-import { Input } from './common/InfoField';
-import { getInput } from './common';
 import timeout from './common/timeout';
 
 describe('Form.Field', () => {
@@ -72,5 +70,32 @@ describe('Form.Field', () => {
       expect(onValuesChange).toHaveBeenCalled();
       onValuesChange.mockReset();
     }
+  });
+
+  // https://github.com/react-component/field-form/issues/753
+  it('uses the latest value for consecutive changes', () => {
+    const form = React.createRef<FormInstance>();
+    const MockInput = ({ onChange }: { onChange?: (value: string) => void }) => (
+      <button
+        type="button"
+        onClick={() => {
+          onChange?.('');
+          onChange?.('A');
+        }}
+      >
+        change
+      </button>
+    );
+
+    const { getByRole } = render(
+      <Form ref={form}>
+        <Field name="input" initialValue="A">
+          <MockInput />
+        </Field>
+      </Form>,
+    );
+
+    fireEvent.click(getByRole('button'));
+    expect(form.current?.getFieldValue('input')).toBe('A');
   });
 });
